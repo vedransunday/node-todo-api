@@ -53,7 +53,17 @@ UserSchema.methods.generateAuthToken = function() {
     });
 };
 
-UserSchema.statics.findByToken = function(token) {
+UserSchema.methods.removeToken = function (token) {
+    //$pull is a mongodb method to remove items from an array
+    var user = this;
+    return user.update({
+        $pull: {
+            tokens: {token}
+        }
+    });
+};
+
+UserSchema.statics.findByToken = function (token) {
     var User = this;
     var decoded;
 
@@ -70,7 +80,7 @@ UserSchema.statics.findByToken = function(token) {
     });
 };
 
-UserSchema.statics.findByCredentials = function(email, password) {
+UserSchema.statics.findByCredentials = function (email, password) {
     var User = this;
 
     return User.findOne({email}).then((user) => {

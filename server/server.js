@@ -104,7 +104,7 @@ app.post('/users', (req, res) => {
 });
 
 app.get('/users/me', authenticate, (req, res) => {
-   res.send(res.user);
+   res.send(req.user);
 });
 
 // POST /users/login {email, password}, use bcrypt compare to compare passwords. Logs user in and returns auth token
@@ -118,8 +118,16 @@ app.post('/users/login', (req, res) => {
     }).catch((e) => res.status(400).send());
 })
 
-app.listen(port, () => {
+app.delete('/users/me/token', authenticate, (req, res) => {
+    req.user.removeToken(req.token).then(() => {
+        res.status(200).send();
+    }).catch((e) => res.status(400).send());
+});
+
+if (!module.parent) {
+    app.listen(port, () => {
     console.log(`Started on port ${port}`);
 });
+}
 
 module.exports = {app};
