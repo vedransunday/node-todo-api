@@ -16,6 +16,7 @@ describe('POST /todos', () => {
 
         request(app)
             .post('/todos')
+            .set('x-auth', users[0].tokens[0].token)
             .send({text})
             .expect(200)
             .expect((res) => {
@@ -37,6 +38,7 @@ describe('POST /todos', () => {
     it('should not create a todo with invalid body data', (done) => {
         request(app)
             .post('/todos')
+            .set('x-auth', users[0].tokens[0].token)
             .send({})
             .expect(400)
             .end((err, res) => {
@@ -56,9 +58,10 @@ describe('GET /todos', () => {
     it('should get all todos', (done) => {
         request(app)
         .get('/todos')
+        .set('x-auth', users[0].tokens[0].token)
         .expect(200)
         .expect((res) => {
-            expect(res.body.todos.length).toBe(2)
+            expect(res.body.todos.length).toBe(1)
         })
         .end(done);
     });
@@ -302,6 +305,27 @@ describe('POST /users/login', () => {
                 return done(err)
             }
             User.findById(users[1]._id).then((user) => {
+                expect(user.tokens.length).toBe(0);
+                done();
+            }).catch((e) => done(e));
+        })
+    });
+});
+
+describe('DELETE /users/me/token', () => {
+    it('should remove auth token on logout', (done) => {
+        request(app)
+        .delete('/users/me/token')
+        .set('x-auth', users[0].tokens[0].token)
+        .expect(200)
+        .expect((res) => {
+            expect(res.headers['x-auth']).toBeFalsy();
+        })
+        .end((err, res) => {
+            if(err) {
+                return done(err)
+            }
+            User.findById(users[0]._id).then((user) => {
                 expect(user.tokens.length).toBe(0);
                 done();
             }).catch((e) => done(e));
