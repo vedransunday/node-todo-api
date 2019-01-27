@@ -4,10 +4,12 @@ const _ = require('lodash');
 const express = require('express');
 const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
+const bcrypt = require('bcryptjs');
 
 var { mongoose } = require('./db/mongoose');
 var { User } = require('./models/user');
 var { Todo } = require('./models/todo');
+var {authenticate} = require('./middleware/authenticate');
 
 var app = express();
 var port = process.env.PORT || 3000;
@@ -84,6 +86,37 @@ app.patch('/todos/:id', (req, res) => {
         res.send({todo});
     }).catch((e) => res.status(400).send());
 });
+
+// POST /users new user
+app.post('/users', (req, res) => {
+    var user = new User({
+        email: req.body.email,
+        password: req.body.password
+    });
+
+    user.save().then(() => {
+        return user.generateAuthToken();
+    }).then((token) => {
+        res.header('x-auth', token).send(user);
+    }).catch((e) => {
+        res.status(400).send(e);
+    });
+});
+
+app.get('/users/me', authenticate, (req, res) => {
+   res.send(res.user);
+});
+
+// POST /users/login {email, password}, use bcrypt compare to compare passwords. Logs user in and returns auth token
+app.post('/users/login', (req, res) => {
+    var body = _.pick(req.body, ['email', 'password']);
+
+    User.findByCredentials(body.email, body.password).then((user) => {
+        return user.generateAuthToken().then((token) => {
+            res.header('x-auth', token).send(user);
+        });
+    }).catch((e) => res.status(400).send());
+})
 
 app.listen(port, () => {
     console.log(`Started on port ${port}`);
